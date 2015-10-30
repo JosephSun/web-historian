@@ -1,18 +1,61 @@
 var path = require('path');
 var archive = require('../helpers/archive-helpers');
 var request = require("request");
-// var httpHelpers = require('http-helpers.js')
-// require more modules/folders here!
-// '/', index.html
-var fs = require('fs');
+var url = require('url');
+var helpers = require('./http-helpers');
 
-// exports.paths = {
-//   siteAssets: path.join(__dirname, '../web/public'),
-//   archivedSites: path.join(__dirname, '../archives/sites'),
-//   list: path.join(__dirname, '../archives/sites.txt')
-// };
+var getSite = function(request, response){
+  //url.parse, turns a url string into an object (ex: {pathname: 'urlString'})
+  var urlPath = url.parse(request.url).pathname;
+   // '/' means index.html, setting up for a special case
+    if (urlPath === '/') { urlPath = '/index.html'; }
+    //NOTE: Will do after finishing http-helpers
+    helpers.serveAssets(response, urlPath, function() {
+      // trim leading slash if present
+      if (urlPath[0] === '/') { urlPath = urlPath.slice(1)}
+        //check the site.text file for the user-submitted urlString
+      archive.isUrlInList(urlPath, function(found){
+        //if urlString is in the site.txt file 
+        if (found) {
+          //NOTE:Will complete after finishing http-helpers
+          helpers.sendRedirect(response, '/loading.html');
+        } else {//else
+          //NOTE:Will complete after finishing http-helpers
+          helpers.send404(response);
+        }
+      });
+    });
+};
 
-exports.handleRequest = function (req, res) {
+var saveSite = function(request, response){
+  helpers.collectData(request, function(data) {
+    //NOTE:Will complete after finishing http-helpers
+    var url = JSON.parse(data).url.replace('http://', '');
+    // check sites.txt for web site
+    archive.isUrlInList(url, function(found){
+      if (found) { // found site
+        // check if site is on disk
+        archive.isUrlArchived(url, function(exists) {
+          if (exists) {
+            // redirect to site page (/www.google.com)
+            helpers.sendRedirect(response, '/' + url);
+          } else {
+            // Redirect to loading.html
+            helpers.sendRedirect(response, '/loading.html');
+          }
+        });
+      } else { // not found
+        // add to sites.txt
+        archive.addUrlToList(url, function(){
+          // Redirect to loading.html
+          helpers.sendRedirect(response, '/loading.html');
+        });
+      }
+    });
+  });
+};
+
+/*exports.handleRequest = function (req, res) {
 
   if(req.method === "GET"){
     if(req.url === "/"){
@@ -68,6 +111,6 @@ exports.handleRequest = function (req, res) {
       
     // }
   }
-
+*/
   // res.end(archive.paths.list);
 };
