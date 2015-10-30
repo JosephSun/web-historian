@@ -23,17 +23,19 @@ exports.handleRequest = function (req, res) {
         res.write(data)
         res.end()
       });
-    }else {
+    // }else if(!archive.isUrlInList(req.url)){
+    //   res.writeHead(400);
+    //   res.end();
+    } else {
       fs.readFile(archive.paths.archivedSites + req.url, function(err, data){
         if (err){
           // console.log("ERROR ERROR ERROR", err)
-          res.writeHead(404) //{'Content-Type': 'text/html','Content-Length':data.length})
-          res.end();
+          // res.writeHead(404) //{'Content-Type': 'text/html','Content-Length':data.length})
+          // res.end();
           throw err; 
         }else {
           res.write(data);
           res.end();
-          
         }
       });
     }
